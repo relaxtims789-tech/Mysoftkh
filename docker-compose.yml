@@ -1,0 +1,125 @@
+# QR Attendance on a VPS: PostgreSQL + the app + nightly database backups + Caddy (automatic HTTPS).
+#
+#   New server (nothing else on ports 80/443):   docker compose up -d --build
+#   Server that already runs SMW / another Caddy: docker compose up -d --build db app backup
+#                                                 and add the site to that Caddy (see docs/DEPLOY.md, option B)
+#
+# Settings come from .env (copy .env.example). Logs: docker compose logs -f app
+services:
+  db:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: qr_attendance
+      POSTGRES_USER: qr_attendance
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql     # PostgreSQL 18 images keep data under /var/lib/postgresql/18/
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U qr_attendance -d qr_attendance"]
+      interval: 10s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://qr_attendance:${DB_PASSWORD}@db:5432/qr_attendance
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+      PUBLIC_URL: https://${DOMAIN:?set DOMAIN in .env}
+      TRUST_PROXY: "1"
+      SUPERADMIN_EMAIL: ${SUPERADMIN_EMAIL:-}
+      SUPERADMIN_PASSWORD: ${SUPERADMIN_PASSWORD:-}
+    volumes:
+      - ./data:/data                 # company logos and employee photos
+    ports:
+      - "127.0.0.1:3200:3200"        # only reachable from the server itself (for an nginx/Caddy installed on the host)
+    networks:
+      default:
+        aliases: [qr-attendance-app]  # name another Docker Caddy (e.g. SMW's) uses to reach this app
+
+  # Public demo (only with COMPOSE_PROFILES=demo, set by setup.sh when DEMO_DOMAIN is in .env): the same app with its own
+  # database (qr_demo, in the same PostgreSQL) holding only "DemoCompany" with 6 months of sample data, rebuilt every night.
+  demo:
+    build: .
+    profiles: [demo]
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://qr_attendance:${DB_PASSWORD}@db:5432/qr_demo
+      DATABASE_POOL_SIZE: "5"
+      JWT_SECRET: ${DEMO_JWT_SECRET:-}
+      PUBLIC_URL: https://${DEMO_DOMAIN:-demo.invalid}
+      TRUST_PROXY: "1"
+      DEMO_MODE: "true"
+      DEMO_PASSWORD: ${DEMO_PASSWORD:-democompany123456}
+      MAIN_SITE_URL: ${MAIN_SITE_URL:-https://www.mysoftkh.com}
+      RATE_LIMIT_PER_MINUTE: "600"
+    volumes:
+      - ./data-demo:/data            # uploads made by demo visitors (emptied at every rebuild)
+
+  # pg_dump into ./backups once at start-up and every night at BACKUP_HOUR_UTC (18 = 01:00 in Cambodia), keeping BACKUP_DAYS days.
+  backup:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGHOST: db
+      PGUSER: qr_attendance
+      PGDATABASE: qr_attendance
+      PGPASSWORD: ${DB_PASSWORD}
+      BACKUP_DAYS: ${BACKUP_DAYS:-14}
+      BACKUP_HOUR_UTC: ${BACKUP_HOUR_UTC:-18}
+    volumes:
+      - ./backups:/backups
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        backup() {
+          f=/backups/qr_attendance-$$(date -u +%Y-%m-%d).dump
+          if pg_dump -Fc -f "$$f.tmp"; then mv "$$f.tmp" "$$f"; echo "backup written: $$f"; else echo "BACKUP FAILED"; rm -f "$$f.tmp"; fi
+          find /backups -name 'qr_attendance-*.dump' -mtime +$${BACKUP_DAYS} -delete
+        }
+        echo "Backups to /backups daily at $${BACKUP_HOUR_UTC}:00 UTC, keeping $${BACKUP_DAYS} days"
+        backup
+        while true; do
+          now=$$(date -u +%s)
+          next=$$(date -u -d "$$(date -u +%Y-%m-%d) $${BACKUP_HOUR_UTC}:00" +%s 2>/dev/null || echo $$((now + 86400)))
+          [ "$$next" -le "$$now" ] && next=$$((next + 86400))
+          sleep $$((next - now))
+          backup
+        done
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on: [app]
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      DOMAIN: ${DOMAIN}
+      WEBSITE_DOMAINS: ${WEBSITE_DOMAINS:-}
+      DEMO_DOMAIN: ${DEMO_DOMAIN:-}
+      DEMO_WEBSITE_DOMAINS: ${DEMO_WEBSITE_DOMAINS:-}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+networks:
+  default:
+    name: qr-attendance             # fixed name so another compose project can join it
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:

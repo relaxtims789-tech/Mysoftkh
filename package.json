@@ -1,0 +1,27 @@
+{
+  "name": "qr-attendance",
+  "version": "1.0.0",
+  "private": true,
+  "description": "QR Code staff attendance: printed branch QR + employee smartphone + GPS geofence + device binding",
+  "workspaces": [
+    "apps/api",
+    "apps/web"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "docx": "^9.9.0",
+    "embedded-postgres": "^18.4.0-beta.17"
+  },
+  "scripts": {
+    "start": "node tools/run.mjs start",
+    "dev": "node tools/run.mjs dev",
+    "db": "node tools/run.mjs db",
+    "seed": "node tools/run.mjs seed",
+    "reset-demo": "node tools/run.mjs reset",
+    "build": "npm run build -w apps/api && npm run build -w apps/web",
+    "test": "npm test -w apps/api",
+    "package": "node tools/package.mjs"
+  }
+}

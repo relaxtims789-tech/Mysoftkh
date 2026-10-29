@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="km">
+<head>
+<meta charset="utf-8">
+<title>MySoft Attendance – guide</title>
+<!-- One feature guide (?g=g02) or all of them (?g=all), printed to A4 PDF by pdf.mjs. Content: guides-*.js. -->
+<style>
+  @page { size: A4; margin: 14mm 14mm 16mm; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { font-family: 'Khmer UI', 'Segoe UI', sans-serif; color: #0f172a; font-size: 10.5pt; line-height: 1.7; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .guide + .guide { break-before: page; }
+  .cover { display: flex; align-items: center; gap: 16px; padding: 16px 20px; border-radius: 14px; color: #fff;
+    background: linear-gradient(120deg, #06163d, #123b9e 70%, #1d4ed8); margin-bottom: 12px; }
+  .cover .logo { background: #fff; border-radius: 10px; padding: 6px 10px; flex: none; }
+  .cover .logo img { height: 34px; display: block; }
+  .cover .num { flex: none; width: 46px; height: 46px; border-radius: 50%; background: #fbbf24; color: #3a2400; display: grid; place-items: center; font: 800 20pt 'Segoe UI', sans-serif; }
+  .cover h1 { margin: 0; font-size: 19pt; line-height: 1.45; color: #fbbf24; }
+  .cover .en { font: 600 10pt 'Segoe UI', sans-serif; color: #c9d8ff; }
+  .meta { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 8px; }
+  .chip { display: inline-block; border: 1px solid #c7d2fe; background: #eef2ff; color: #1e3a8a; border-radius: 999px; padding: 1px 10px; font-size: 9pt; }
+  .intro { margin: 4px 0 10px; font-size: 11pt; }
+  h2 { font-size: 13pt; color: #1d4ed8; margin: 16px 0 6px; padding-bottom: 3px; border-bottom: 2px solid #e0e7ff; break-after: avoid; }
+  .sec { break-inside: auto; }
+  .sec p { margin: 4px 0 6px; }
+  ol.steps { margin: 4px 0 8px; padding-left: 0; list-style: none; counter-reset: s; }
+  ol.steps li { position: relative; padding-left: 30px; margin: 4px 0; counter-increment: s; }
+  ol.steps li::before { content: counter(s); position: absolute; left: 0; top: 2px; width: 21px; height: 21px; border-radius: 6px; background: #1d4ed8; color: #fff; font: 700 9.5pt/21px 'Segoe UI', sans-serif; text-align: center; }
+  .mk { display: inline-grid; place-items: center; width: 19px; height: 19px; border-radius: 50%; background: #f59e0b; color: #fff; font: 800 9pt 'Segoe UI', sans-serif; vertical-align: 1px; margin: 0 2px; }
+  .shot { position: relative; margin: 6px auto 10px; border: 1px solid #cbd5e1; border-radius: 10px; overflow: hidden; break-inside: avoid; box-shadow: 0 2px 8px rgba(15,23,42,0.08); }
+  .shot img { display: block; width: 100%; }
+  .shot.phone { width: 58mm; border-radius: 18px; border: 5px solid #0b1220; }
+  .shot.pair { display: inline-block; vertical-align: top; margin: 6px 3mm 10px; }
+  .pairs { text-align: center; break-inside: avoid; }
+  .shot .hl { position: absolute; border: 2.5px solid #f59e0b; border-radius: 6px; box-shadow: 0 0 0 3px rgba(245,158,11,0.25); }
+  .shot .pin { position: absolute; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; background: #f59e0b; color: #fff; border: 2px solid #fff;
+    display: grid; place-items: center; font: 800 10pt 'Segoe UI', sans-serif; box-shadow: 0 2px 6px rgba(0,0,0,0.35); }
+  .cap { text-align: center; font-size: 8.5pt; color: #64748b; margin: -6px 0 10px; }
+  .tips { border-left: 4px solid #16a34a; background: #f0fdf4; border-radius: 8px; padding: 6px 12px; margin: 10px 0; break-inside: avoid; }
+  .tips b { color: #15803d; }
+  .tips ul { margin: 2px 0; padding-left: 18px; }
+  .warn { border-left: 4px solid #f59e0b; background: #fffbeb; border-radius: 8px; padding: 6px 12px; margin: 8px 0; break-inside: avoid; }
+  .toc { columns: 2; column-gap: 10mm; }
+  .toc div { break-inside: avoid; padding: 3px 0; border-bottom: 1px dotted #cbd5e1; }
+  .toc b { color: #1d4ed8; font-family: 'Segoe UI'; margin-right: 6px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+  const IMG = new URLSearchParams(location.search).get('img') || 'jpg';
+  const VP = { desk: [1280, 760], phone: [390, 844] };
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  // "[1]" in a text -> an orange numbered marker matching the one on the screenshot; **bold** -> <b>
+  const rich = (s) => esc(s).replace(/\[(\d+)\]/g, '<span class="mk">$1</span>').replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+  function shot(name, marks, BOXES, cls = '') {
+    const phone = /^g1[34]-/.test(name);
+    const [w, h] = phone ? VP.phone : VP.desk;
+    let over = '';
+    for (const m of marks || []) {
+      const [key, n, mode] = m;
+      const b = typeof key === 'object' ? key : BOXES[key]; // a recorded box name, or {x,y,w,h} in CSS px of the capture viewport
+      if (!b) continue;
+      if (mode !== 'pin') over += `<div class="hl" style="left:${(b.x / w) * 100}%;top:${(b.y / h) * 100}%;width:${(b.w / w) * 100}%;height:${(b.h / h) * 100}%"></div>`;
+      const px = mode === 'pin' ? ((b.x + b.w / 2) / w) * 100 : Math.min(97, ((b.x + b.w) / w) * 100), py = mode === 'pin' ? ((b.y + b.h / 2) / h) * 100 : Math.max(3, (b.y / h) * 100);
+      over += `<div class="pin" style="left:${px}%;top:${py}%">${n}</div>`;
+    }
+    return `<div class="shot${phone ? ' phone' : ''}${cls ? ' ' + cls : ''}"><img src="${IMG}/${name.replace(/.png$/, '.jpg')}">${over}</div>`;
+  }
+  function render(g, BOXES) {
+    let h = `<section class="guide"><div class="cover"><div class="logo"><img src="logo.png"></div><div class="num">${g.n}</div>
+      <div><h1>${esc(g.title)}</h1><div class="en">${esc(g.en)} · MySoft Attendance</div></div></div>`;
+    h += `<div class="meta">${(g.who || []).map((w) => `<span class="chip">👤 ${esc(w)}</span>`).join('')}${g.where ? `<span class="chip">📍 ${esc(g.where)}</span>` : ''}</div>`;
+    if (g.intro) h += `<p class="intro">${rich(g.intro)}</p>`;
+    for (const s of g.sections) {
+      h += `<div class="sec"><h2>${esc(s.h)}</h2>`;
+      if (s.text) h += `<p>${rich(s.text)}</p>`;
+      if (s.steps) h += `<ol class="steps">${s.steps.map((x) => `<li>${rich(x)}</li>`).join('')}</ol>`;
+      if (s.img) h += shot(s.img, s.marks, BOXES);
+      if (s.imgs) h += `<div class="pairs">${s.imgs.map((i) => shot(i, s.marks, BOXES, 'pair')).join('')}</div>`;
+      if (s.cap) h += `<div class="cap">${rich(s.cap)}</div>`;
+      if (s.after) h += `<p>${rich(s.after)}</p>`;
+      if (s.warn) h += `<div class="warn">⚠️ ${rich(s.warn)}</div>`;
+      h += `</div>`;
+    }
+    if (g.tips?.length) h += `<div class="tips"><b>💡 គន្លឹះ</b><ul>${g.tips.map((x) => `<li>${rich(x)}</li>`).join('')}</ul></div>`;
+    return h + `</section>`;
+  }
+  function toc(list) {
+    return `<section class="guide"><div class="cover"><div class="logo"><img src="logo.png"></div>
+      <div><h1>សៀវភៅណែនាំការប្រើប្រាស់</h1><div class="en">MySoft Attendance · QR and Phones Attendance · User guide</div></div></div>
+      <p class="intro">សៀវភៅណែនាំនេះពន្យល់ពីមុខងារនីមួយៗនៃប្រព័ន្ធ MySoft Attendance ជាជំហានៗ ជាមួយរូបភាពអេក្រង់ពិត។ លេខពណ៌ទឹកក្រូច <span class="mk">1</span> នៅក្នុងអត្ថបទ ត្រូវនឹងលេខដូចគ្នានៅលើរូបភាព។</p>
+      <h2>មាតិកា</h2><div class="toc">${list.map((g) => `<div><b>${g.n}</b>${esc(g.title)}</div>`).join('')}</div>
+      <div class="tips"><b>💡 ជំនួយ</b><ul><li>គេហទំព័រ៖ www.mysoftkh.com · Telegram៖ @mysoftkh · ទូរស័ព្ទ៖ 014 789 987 · 096 89 99 169</li></ul></div></section>`;
+  }
+  const want = new URLSearchParams(location.search).get('g') || 'all';
+  window.__ready = fetch('shots/boxes.json').then((r) => r.json()).then((BOXES) => {
+    const list = (window.GUIDES || []).slice().sort((a, b) => a.n - b.n);
+    document.getElementById('root').innerHTML = want === 'all' ? toc(list) + list.map((g) => render(g, BOXES)).join('') : render(list.find((g) => g.id === want), BOXES);
+    return Promise.all([...document.images].map((i) => (i.complete ? 1 : new Promise((r) => { i.onload = i.onerror = r; })))).then(() => document.fonts.ready);
+  });
+</script>
+<script src="guides-a.js"></script>
+<script src="guides-b.js"></script>
+<script src="guides-c.js"></script>
+<script src="guides-d.js"></script>
+</body>
+</html>

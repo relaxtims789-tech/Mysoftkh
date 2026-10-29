@@ -1,0 +1,17 @@
+# HTTPS for QR Attendance. Caddy gets and renews the Let's Encrypt certificate for every address by itself.
+# Phones only allow the camera and GPS on https, so this is required.
+# WEBSITE_DOMAINS (optional, e.g. "mysoftkh.com www.mysoftkh.com") serve the same app: the public website with prices
+# and sign-up is at /, the admin dashboard at /admin. Add them only once their DNS points at this server.
+# DEMO_DOMAIN / DEMO_WEBSITE_DOMAINS (optional, e.g. "demo.attendance.mysoftkh.com" and "demo.mysoftkh.com www.demo.mysoftkh.com")
+# go to the public demo app instead. Demo addresses must start with "demo." or "www.demo.".
+{$DOMAIN} {$WEBSITE_DOMAINS} {$DEMO_DOMAIN} {$DEMO_WEBSITE_DOMAINS} {
+	encode gzip zstd
+	header -Server
+	@demo expression {host}.startsWith("demo.") || {host}.startsWith("www.demo.")
+	handle @demo {
+		reverse_proxy demo:3200
+	}
+	handle {
+		reverse_proxy app:3200
+	}
+}

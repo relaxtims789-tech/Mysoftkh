@@ -1,0 +1,70 @@
+// The two guide videos: scenes, captions (Khmer + English), pointer targets (box names from the captures).
+window.VIDEOS = {
+  v1: {
+    file: 'MySoft-Guide-1-Register-Company.mp4',
+    size: [1920, 1080],
+    shots: '../v1/', viewport: [1440, 810], device: 'browser',
+    scenes: [
+      { kind: 'title', dur: 4.2, km: 'របៀបចុះឈ្មោះក្រុមហ៊ុន', en: 'How to register your company', subKm: 'ឥតគិតថ្លៃ ១ ខែ · ប្រហែល ៥ នាទី', subEn: 'Free for 1 month · about 5 minutes', badge: '1' },
+      { img: '01-site.png', url: 'www.mysoftkh.com', target: 'site_start', zoom: 1.15, dur: 5, km: 'បើក www.mysoftkh.com រួចចុច «សាកល្បងឥតគិតថ្លៃ»', en: 'Open www.mysoftkh.com and click “Free trial”' },
+      { img: '02-signup.png', url: 'www.mysoftkh.com/signup', target: 'su_cn', zoom: 1.3, dur: 3.6, km: 'បំពេញព័ត៌មានក្រុមហ៊ុនរបស់អ្នក', en: 'Fill in your company details' },
+      { img: '03-signup-company.png', url: 'www.mysoftkh.com/signup', target: 'su_cc2', zoom: 1.35, dur: 5.4, km: 'ឈ្មោះក្រុមហ៊ុន និងលេខកូដក្រុមហ៊ុន (បុគ្គលិកប្រើលេខកូដនេះពេលចូល)', en: 'Company name and company code (your staff type this code to sign in)' },
+      { img: '04-signup-you.png', url: 'www.mysoftkh.com/signup', target: 'su_pw', zoom: 1.3, dur: 5, km: 'ឈ្មោះ លេខទូរស័ព្ទ អ៊ីមែល និងពាក្យសម្ងាត់របស់អ្នក', en: 'Your name, phone number, email and password' },
+      { img: '05-signup-plan.png', url: 'www.mysoftkh.com/signup', target: 'su_submit', zoom: 1.25, dur: 5.6, km: 'ជ្រើសចំនួនបុគ្គលិក ធីកយល់ព្រម រួចចុចបង្កើតគណនី', en: 'Choose your number of staff, accept the terms and create the account' },
+      { img: '06-welcome.png', url: 'attendance.mysoftkh.com/admin', target: 'welcome_branch', zoom: 1.2, dur: 5.4, km: 'រួចរាល់! ចាប់ផ្តើមប្រើបានភ្លាម ក្នុង ៣ ជំហាន', en: 'Done! You are in. Get started in 3 steps' },
+      { img: '07-branches-empty.png', url: 'attendance.mysoftkh.com/admin/branches', target: 'add_branch', zoom: 1.2, dur: 4.2, step: '1', km: 'ជំហានទី ១៖ បន្ថែមសាខា', en: 'Step 1: add your branch' },
+      { img: '08-branch-form.png', url: 'attendance.mysoftkh.com/admin/branches', target: 'b_save', zoom: 1.12, dur: 6.4, step: '1', km: 'ចុចលើផែនទីត្រង់ច្រកចូលការិយាល័យ កំណត់រង្វង់ (ម៉ែត្រ) រួចចុច Save', en: 'Click the map at the office entrance, set the radius (meters), then Save' },
+      { img: '10-qr-empty.png', url: 'attendance.mysoftkh.com/admin/qr', target: 'new_qr', zoom: 1.2, dur: 4.2, step: '2', km: 'ជំហានទី ២៖ បង្កើត QR កូដសម្រាប់សាខា', en: 'Step 2: create a QR code for the branch' },
+      { img: '12-qr-list.png', url: 'attendance.mysoftkh.com/admin/qr', target: 'qr_print', zoom: 1.25, dur: 4.6, step: '2', km: 'ចុច Print ដើម្បីបោះពុម្ពប័ណ្ណ QR', en: 'Click Print to print the QR poster' },
+      { img: '13-qr-print.png', url: 'attendance.mysoftkh.com/admin/qr/print', zoomAt: [0.5, 0.45], zoom: 1.08, dur: 4.6, step: '2', km: 'បិទប័ណ្ណ QR នៅច្រកចូល ដើម្បីឱ្យបុគ្គលិកស្កេន', en: 'Post it at the entrance for your staff to scan' },
+      { img: '14-employees-empty.png', url: 'attendance.mysoftkh.com/admin/employees', target: 'add_emp', zoom: 1.2, dur: 4.6, step: '3', km: 'ជំហានទី ៣៖ បន្ថែមបុគ្គលិក (ឬនាំចូលពីឯកសារ CSV)', en: 'Step 3: add your staff (or import them from a CSV file)' },
+      { img: '15-employee-form.png', url: 'attendance.mysoftkh.com/admin/employees', target: 'e_save', zoom: 1.12, dur: 5.2, step: '3', km: 'លេខសម្គាល់បុគ្គលិក ឈ្មោះ លេខទូរស័ព្ទ និងសាខា រួចចុច Save', en: 'Employee ID, name, phone and branch, then Save' },
+      { img: '16-employee-created.png', url: 'attendance.mysoftkh.com/admin/employees', zoomAt: [0.5, 0.5], zoom: 1.35, dur: 5.8, step: '3', km: 'ផ្តល់ព័ត៌មានចូលប្រើទាំងនេះទៅបុគ្គលិក', en: 'Give these sign-in details to the employee' },
+      { kind: 'end', dur: 6.5, km: 'ត្រៀមរួចរាល់! បុគ្គលិកអាចចុះវត្តមានតាមទូរស័ព្ទបានហើយ', en: 'All set! Your staff can now check in with their phones', nextKm: 'វីដេអូបន្ទាប់៖ របៀបដំឡើងកម្មវិធីបុគ្គលិក', nextEn: 'Next video: how staff set up the app' },
+    ],
+  },
+  v2: {
+    file: 'MySoft-Guide-2-Staff-App.mp4',
+    size: [1080, 1920],
+    shots: '../v2/', viewport: [390, 844], device: 'phone',
+    scenes: [
+      { kind: 'title', dur: 4.2, km: 'របៀបដំឡើងកម្មវិធីបុគ្គលិក', en: 'How to set up the staff app', subKm: 'ចុះវត្តមានដោយទូរស័ព្ទរបស់អ្នក', subEn: 'Check in with your own phone', badge: '2' },
+      { kind: 'need', dur: 5.5, km: 'សុំព័ត៌មាន ៣ យ៉ាង ពីអ្នកគ្រប់គ្រងរបស់អ្នក', en: 'Get 3 things from your admin or HR' },
+      { img: '20-login.png', url: 'attendance.mysoftkh.com/app', dur: 4.4, km: 'បើក attendance.mysoftkh.com/app នៅលើទូរស័ព្ទ', en: 'Open attendance.mysoftkh.com/app on your phone' },
+      { img: '21-login-filled.png', url: 'attendance.mysoftkh.com/app', target: 'l_submit', zoom: 1.18, dur: 5.4, km: 'បញ្ចូលលេខកូដក្រុមហ៊ុន លេខសម្គាល់ និងពាក្យសម្ងាត់ រួចចុច Sign in', en: 'Enter the company code, employee ID and password, then tap Sign in' },
+      { img: '23-password-filled.png', url: 'attendance.mysoftkh.com/app', target: 'p_save', zoom: 1.15, dur: 5.4, km: 'ដាក់ពាក្យសម្ងាត់ថ្មីរបស់អ្នក (យ៉ាងតិច ៨ តួ មានអក្សរ និងលេខ)', en: 'Choose your own password (8+ characters with letters and numbers)' },
+      { kind: 'install', dur: 8, km: 'ដាក់កម្មវិធីនៅលើអេក្រង់ដើម', en: 'Add the app to your home screen' },
+      { img: '24-home-first.png', url: 'attendance.mysoftkh.com/app', target: 'h_scan', zoom: 1.12, dur: 4.8, km: 'ពេលមកដល់ការិយាល័យ ចុច SCAN QR', en: 'When you arrive at work, tap SCAN QR' },
+      { kind: 'scan', dur: 5.8, km: 'ស្កេន QR នៅច្រកចូល — អនុញ្ញាតទីតាំង និងកាមេរ៉ា នៅលើកដំបូង', en: 'Scan the QR at the entrance. Allow location and camera the first time' },
+      { img: '25-scan-result.png', url: 'attendance.mysoftkh.com/app', zoomAt: [0.5, 0.45], zoom: 1.1, dur: 5.4, km: 'ចុះវត្តមានចូលរួចរាល់! ទូរស័ព្ទរបស់អ្នកត្រូវបានចុះឈ្មោះដោយស្វ័យប្រវត្តិ', en: 'Checked in! Your phone is registered automatically' },
+      { img: '26-home-checked-in.png', url: 'attendance.mysoftkh.com/app', target: 'h_scan', zoom: 1.12, dur: 5, km: 'ពេលចេញពីការងារ ស្កេនម្តងទៀត ដើម្បីចុះវត្តមានចេញ', en: 'When you leave, scan again to check out' },
+      { img: '27-history.png', url: 'attendance.mysoftkh.com/app/history', dur: 4.2, km: 'មើលប្រវត្តិវត្តមានរបស់អ្នក', en: 'See your attendance history' },
+      { img: '28-leave.png', url: 'attendance.mysoftkh.com/app/leave', dur: 4.2, km: 'ស្នើសុំច្បាប់ឈប់សម្រាក ពីទូរស័ព្ទ', en: 'Request leave from your phone' },
+      { kind: 'end', dur: 6.5, km: 'រួចរាល់! ចុះវត្តមានបានរៀងរាល់ថ្ងៃ ដោយទូរស័ព្ទរបស់អ្នក', en: 'Done! Check in every day with your phone', nextKm: 'មានបញ្ហា? សូមទាក់ទងអ្នកគ្រប់គ្រងក្រុមហ៊ុនរបស់អ្នក', nextEn: 'Need help? Ask your company admin' },
+    ],
+  },
+};
+
+// Promotion video (vertical) from the customer's Khmer script. Text is exactly the script; "hl" words are highlighted.
+// A round presenter clip can be added later in the top-right circle (VIDEOS.promo.presenter = 'path/to/clip.mp4').
+window.VIDEOS.promo = {
+  file: 'MySoft-Promo-Khmer.mp4',
+  size: [1080, 1920],
+  compose: 'promo.html',
+  device: 'phone',
+  presenter: null,
+  presenterSlot: { cx: 880, cy: 236, r: 168 },
+  scenes: [
+    { visual: 'pain', dur: 5.2, text: 'រំខានចិត្តនឹងការបាត់ទិន្នន័យវត្តមាន និងរៀបចំប្រាក់ខែស្មុគស្មាញមែនទេ? 📉', hl: ['បាត់ទិន្នន័យវត្តមាន', 'ប្រាក់ខែស្មុគស្មាញ'] },
+    { visual: 'laptop', dur: 5.6, text: 'ឱ្យ MySoft KH ជួយធ្វើបច្ចុប្បន្នភាពការងារ HR របស់អ្នកឱ្យកាន់តែសម័យ និងលឿនទ្វេដង!', hl: ['MySoft KH', 'លឿនទ្វេដង!'] },
+    { visual: 'nomachine', dur: 3.8, text: 'មិនបាច់ទិញម៉ាស៊ីនថ្លៃៗ!', hl: ['មិនបាច់ទិញម៉ាស៊ីនថ្លៃៗ!'], big: true },
+    { visual: 'two', dur: 3.8, text: 'MysoftKH ផ្តល់ជូន ២ជម្រើស សំរាប់លោក', hl: ['២ជម្រើស'], big: true },
+    { visual: 'qr', dur: 6.4, num: '1', text: 'គ្រាន់តែប្រើប្រាស់ទូរស័ព្ទស្កេន QR Code បិទនៅក្រុមហ៊ុន បុគ្គលិកស្កេនតាមទូរស័ព្ទដៃ រួចរាល់ជាការស្រេច! 📊', hl: ['QR Code', 'រួចរាល់ជាការស្រេច!'] },
+    { visual: 'buttons', dur: 5.4, num: '2', text: 'Check-in និង Check-Out វត្តមាន នៅលើទូរស័ព្ទដៃ', hl: ['Check-in', 'Check-Out'], target: 'btn_in' },
+    { visual: 'gps', dur: 4.8, check: 1, text: 'ស្កេន QR រឺ Check-in និង Check-Out + កំណត់ទីតាំង GPS ត្រឹមត្រូវ', hl: ['GPS'] },
+    { visual: 'leave', dur: 4.8, check: 2, text: 'គ្រប់គ្រងច្បាប់ និងការថែមម៉ោង (OT) ស្វ័យប្រវត្តិ', hl: ['ស្វ័យប្រវត្តិ'] },
+    { visual: 'payroll', dur: 4.8, check: 3, text: 'គណនាប្រាក់ខែ ពន្ធ និង ប.ស.ស. ត្រឹមត្រូវតាមស្តង់ដារ', hl: ['ប្រាក់ខែ', 'ពន្ធ', 'ប.ស.ស.'] },
+    { visual: 'gift', dur: 4.8, text: '🎁 ចុះឈ្មោះសាកល្បងប្រើប្រាស់ Free ១ ខែពេញឥឡូវនេះ!', lines: ['🎁 ចុះឈ្មោះសាកល្បងប្រើប្រាស់', 'Free ១ ខែពេញឥឡូវនេះ!'], hl: ['Free ១ ខែពេញ'], big: true, size: 62 },
+    { visual: 'steps', dur: 8, text: 'ចូល គេហទំព័រ៖ www.mysoftkh.com ឥឡូវនេះ', hl: ['www.mysoftkh.com'] },
+  ],
+};

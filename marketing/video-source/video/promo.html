@@ -1,0 +1,182 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>promo scene</title>
+<!-- One scene of the promotion video (1080x1920). ?v=promo&i=3&layer=base|cap
+     base: background, logo, the visual (illustration or real app screen); cap: the script line (fades in).
+     The top-right circle is kept free for a presenter clip. -->
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { overflow: hidden; }
+  body { font-family: 'Segoe UI', 'Khmer UI', 'Segoe UI Emoji', sans-serif; color: #fff; -webkit-font-smoothing: antialiased; }
+  .km { font-family: 'Khmer UI', 'Segoe UI', 'Segoe UI Emoji', sans-serif; }
+  #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; }
+  .bg { position: absolute; inset: 0;
+    background: radial-gradient(900px 700px at 85% 12%, rgba(59,130,246,0.55), transparent 70%),
+      radial-gradient(800px 800px at 0% 95%, rgba(29,78,216,0.6), transparent 70%),
+      linear-gradient(165deg, #06163d 0%, #0b2a6f 55%, #123b9e 100%); }
+  .bg::after { content: ''; position: absolute; inset: 0; background-image: radial-gradient(rgba(255,255,255,0.08) 1.4px, transparent 1.6px); background-size: 30px 30px; }
+  body.cap .bg { display: none; }
+  .abs { position: absolute; }
+  .tile { background: #fff; border-radius: 18px; box-shadow: 0 14px 34px rgba(0,0,0,0.3); }
+  .card { background: #fff; color: #0f172a; border-radius: 26px; box-shadow: 0 22px 50px rgba(0,0,0,0.38); overflow: hidden; }
+  .crop { position: relative; overflow: hidden; }
+  .crop img { position: absolute; }
+  .phone { position: absolute; background: #0b1220; border-radius: 52px; padding: 14px; box-shadow: 0 30px 70px rgba(0,0,0,0.55), inset 0 0 0 3px #2a3550; }
+  .phone .screen { position: relative; border-radius: 40px; overflow: hidden; background: #fff; }
+  .phone .screen img { display: block; width: 100%; }
+  .phone .island { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 110px; height: 30px; border-radius: 15px; background: #0b1220; }
+  .laptop .screen { background: #0b1220; border-radius: 20px 20px 6px 6px; padding: 12px 12px 14px; box-shadow: 0 30px 60px rgba(0,0,0,0.45), inset 0 0 0 2px #2a3550; }
+  .laptop .screen img { display: block; width: 100%; border-radius: 6px; }
+  .laptop .base { height: 22px; margin: 0 -36px; background: linear-gradient(#cbd5e1, #94a3b8); border-radius: 0 0 22px 22px; }
+  .text { position: absolute; left: 60px; right: 60px; top: 1300px; }
+  .line { font-weight: 700; line-height: 1.55; text-shadow: 0 3px 14px rgba(0,0,0,0.35); }
+  .hl { color: #fbbf24; }
+  .badge { width: 92px; height: 92px; border-radius: 50%; background: #fbbf24; color: #3a2400; display: grid; place-items: center; font-weight: 900; font-size: 54px; box-shadow: 0 10px 24px rgba(0,0,0,0.35); margin-bottom: 18px; }
+  .check { width: 92px; height: 92px; border-radius: 26px; background: #16a34a; display: grid; place-items: center; margin-bottom: 18px; box-shadow: 0 10px 24px rgba(0,0,0,0.35); }
+  .chip { display: inline-flex; align-items: center; gap: 12px; background: #fff; color: #0f172a; border-radius: 999px; padding: 12px 24px; font-weight: 700; box-shadow: 0 12px 28px rgba(0,0,0,0.3); }
+</style>
+<script src="scenes.js"></script>
+</head>
+<body>
+<div id="stage"><div class="bg"></div></div>
+<script>
+const q = new URLSearchParams(location.search);
+const V = VIDEOS[q.get('v') || 'promo'];
+const S = V.scenes[Number(q.get('i'))];
+const layer = q.get('layer') || 'base';
+const stage = document.getElementById('stage');
+document.body.classList.toggle('cap', layer === 'cap');
+const el = (h) => { const d = document.createElement('div'); d.innerHTML = h.trim(); return d.firstChild; };
+const add = (h) => stage.appendChild(el(h));
+const meta = { target: null, focus: [540, 840] };
+window.__meta = meta;
+const VIS = { x: 60, y: 420, w: 960, h: 820 }; // where the visual goes
+const ic = (p, size = 56, stroke = 'currentColor') => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${stroke}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+const QR = '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3"/>';
+const PHONE = '<rect x="6" y="2" width="12" height="20" rx="3"/><path d="M11 18h2"/>';
+const CHECK = '<path d="M5 12.5l4.5 4.5L19 7.5"/>';
+
+function phone(src, x, y, sw) {
+  const p = el(`<div class="phone" style="left:${x}px;top:${y}px;width:${sw + 28}px"><div class="screen"><img src="${src}"><div class="island"></div></div></div>`);
+  stage.appendChild(p);
+  return { x: x + 14, y: y + 14, k: sw / 390 };
+}
+/** A cut-out of a screenshot: show the region [rx, ry, rw, rh] (image px) inside a box of width w. */
+function crop(src, imgW, region, x, y, w, extra = '') {
+  const [rx, ry, rw, rh] = region;
+  const s = w / rw;
+  add(`<div class="card crop" style="position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${Math.round(rh * s)}px;${extra}"><img src="${src}" style="left:${-rx * s}px;top:${-ry * s}px;width:${imgW * s}px"></div>`);
+  return Math.round(rh * s);
+}
+
+const visuals = {
+  pain() {
+    // Paper timesheets, a falling chart and a calculator: the problem.
+    add(`<div class="card abs" style="left:110px;top:500px;width:520px;height:640px;transform:rotate(-7deg);padding:34px 36px">
+      <div style="font-size:34px;font-weight:800;margin-bottom:18px">Timesheet</div>
+      ${Array.from({ length: 9 }, (_, i) => `<div style="display:flex;gap:16px;align-items:center;border-bottom:2px solid #e2e8f0;padding:12px 0">
+        <div style="width:150px;height:14px;border-radius:7px;background:#cbd5e1"></div><div style="width:70px;height:14px;border-radius:7px;background:#e2e8f0"></div>
+        <div style="margin-left:auto;font-size:30px;color:${i % 3 === 1 ? '#dc2626' : '#94a3b8'};font-weight:800">${i % 3 === 1 ? '?' : i % 4 === 2 ? '✗' : '✓'}</div></div>`).join('')}
+    </div>`);
+    add(`<div class="abs" style="left:560px;top:560px;width:380px;height:380px;border-radius:50%;background:rgba(220,38,38,0.18);display:grid;place-items:center;font-size:230px">📉</div>`);
+    add(`<div class="abs" style="left:620px;top:930px;font-size:170px;transform:rotate(10deg)">🧮</div>`);
+    add(`<div class="abs" style="left:430px;top:1040px;font-size:120px;transform:rotate(-8deg)">⏰</div>`);
+  },
+  laptop() {
+    add(`<div class="abs laptop" style="left:110px;top:560px;width:860px"><div class="screen"><img src="../p/dashboard.png"></div><div class="base"></div></div>`);
+    add(`<div class="abs chip km" style="left:120px;top:470px;font-size:30px">⚡ HR · វត្តមាន · ប្រាក់ខែ</div>`);
+    add(`<div class="abs chip" style="left:640px;top:1120px;font-size:30px;background:#fbbf24;color:#3a2400">2× faster</div>`);
+  },
+  nomachine() {
+    // An attendance machine crossed out, and a phone instead.
+    add(`<div class="abs" style="left:110px;top:520px;width:430px;height:600px">
+      <div class="card" style="position:absolute;inset:40px 30px;border-radius:40px;background:linear-gradient(#e2e8f0,#94a3b8);padding:40px">
+        <div style="height:150px;border-radius:16px;background:#0f172a;margin-bottom:34px;display:grid;place-items:center;color:#38bdf8;font-size:44px;font-weight:800">08:00</div>
+        <div style="width:180px;height:180px;margin:0 auto;border-radius:50%;background:#334155;display:grid;place-items:center">${ic('<path d="M12 11c0 3-1 5-2 7M8 9a4 4 0 0 1 8 0c0 4-1 7-2 9M5 12c0-4 3-7 7-7s7 3 7 7c0 3-.5 5-1 7"/>', 120, '#94a3b8')}</div>
+      </div>
+      <div style="position:absolute;inset:0;border:28px solid #dc2626;border-radius:50%"></div>
+      <div style="position:absolute;left:50%;top:-30px;bottom:-30px;width:28px;background:#dc2626;transform:translateX(-50%) rotate(-45deg)"></div>
+    </div>`);
+    add(`<div class="abs chip" style="left:150px;top:1150px;font-size:40px;color:#dc2626">$$$ ✗</div>`);
+    const p = phone('../p/phone-buttons.png', 660, 560, 290);
+    add(`<div class="abs check" style="left:860px;top:1080px;margin:0">${ic(CHECK, 58, '#fff')}</div>`);
+  },
+  two() {
+    const card = (n, icon, title, sub, x) => `<div class="card abs" style="left:${x}px;top:560px;width:440px;height:560px;padding:44px;text-align:center">
+      <div class="badge" style="margin:0 auto 26px">${n}</div>
+      <div style="width:170px;height:170px;margin:0 auto 26px;border-radius:40px;background:#e8efff;color:#1d4ed8;display:grid;place-items:center">${icon}</div>
+      <div style="font-size:42px;font-weight:800">${title}</div><div class="km" style="font-size:30px;color:#475569;margin-top:8px;line-height:1.5">${sub}</div></div>`;
+    add(card('1', ic(QR, 110), 'QR Code', 'ស្កេនតាមទូរស័ព្ទ', 80));
+    add(card('2', ic(PHONE + '<path d="M9 10l3 3 3-3"/>', 110), 'Check-in / out', 'ចុចនៅលើទូរស័ព្ទ', 560));
+  },
+  qr() {
+    add(`<div class="card crop abs" style="left:80px;top:480px;width:520px;height:700px;transform:rotate(-4deg)"><img src="../v1/13b-qr-print-scrolled.png" style="left:-372px;top:-60px;width:1170px"></div>`);
+    phone('../v2/25-scan-result.png', 620, 500, 340);
+  },
+  buttons() {
+    const p = phone('../p/phone-buttons.png', 330, 440, 380);
+    const b = (window.BOXES || {})[S.target];
+    if (b) meta.target = [p.x + (b.x + b.w / 2) * p.k, p.y + (b.y + b.h / 2) * p.k];
+    meta.focus = meta.target;
+  },
+  gps() {
+    const h = crop('../p/branches.png', 2560, [780, 250, 1780, 1330], 60, 520, 960);
+    add(`<div class="abs chip" style="left:90px;top:${520 + h - 40}px;font-size:34px">📍 GPS · ${'100 m'}</div>`);
+  },
+  leave() {
+    const h1 = crop('../p/leave.png', 2560, [510, 60, 2040, 600], 60, 440, 960);
+    crop('../p/live.png', 2560, [510, 60, 2040, 680], 60, 440 + h1 + 26, 960);
+    add(`<div class="abs chip" style="left:640px;top:410px;font-size:30px">OT ✓ · Leave ✓</div>`);
+  },
+  payroll() {
+    crop('../p/payroll.png', 2560, [510, 60, 2040, 640], 60, 470, 960);
+    phone('../p/phone-payslips.png', 680, 640, 260);
+    add(`<div class="abs" style="left:80px;top:900px;display:flex;flex-direction:column;gap:20px">
+      ${['ពន្ធលើប្រាក់បៀវត្ស ✓', 'ប.ស.ស. ✓', 'USD · KHR ✓'].map((t) => `<div class="chip km" style="font-size:34px">${t}</div>`).join('')}</div>`);
+  },
+  gift() {
+    add(`<div class="abs" style="left:0;right:0;top:470px;text-align:center;font-size:330px;line-height:1">🎁</div>`);
+    add(`<div class="abs" style="left:610px;top:820px;width:300px;height:300px;border-radius:50%;transform:rotate(-10deg);
+      background:radial-gradient(circle at 35% 30%, #fff7d6, #fbbf24 55%, #f59e0b);color:#3a2400;display:grid;place-content:center;text-align:center;
+      box-shadow:0 18px 40px rgba(245,158,11,0.45), inset 0 0 0 8px rgba(255,255,255,0.45)">
+      <div style="font-size:110px;font-weight:900;line-height:0.95">$0</div><div class="km" style="font-size:34px;font-weight:700">១ ខែពេញ</div></div>`);
+    add(`<div class="abs chip" style="left:150px;top:900px;font-size:44px;font-weight:900;letter-spacing:2px;background:#16a34a;color:#fff">FREE</div>`);
+  },
+  steps() {
+    const steps = ['១ ចុះឈ្មោះចូលប្រើនិងគ្រប់គ្រង', '២ សាកល្បងប្រើ Free ១ ខែពេញ', '៣ ប្រើពេញចិត្តចាំបង់លុយ'];
+    add(`<div class="abs" style="left:60px;right:60px;top:440px;display:flex;flex-direction:column;gap:22px">
+      ${steps.map((t, i) => `<div class="card km" style="display:flex;align-items:center;gap:28px;padding:26px 34px;font-size:42px;font-weight:700;line-height:1.5">
+        <div style="flex:none;width:84px;height:84px;border-radius:50%;background:${i === 2 ? '#f59e0b' : '#1d4ed8'};color:#fff;display:grid;place-items:center;font-size:44px">${t.slice(0, 1)}</div>${t.slice(2)}</div>`).join('')}
+    </div>`);
+    add(`<div class="abs" style="left:60px;right:60px;top:1010px;display:flex;align-items:center;gap:30px">
+      <div class="card" style="flex:none;width:210px;padding:10px;text-align:center"><img src="telegram-qr.png" style="width:100%;display:block"><div style="font-size:16px;font-weight:700">Telegram @mysoftkh</div></div>
+      <div style="font-size:34px;line-height:1.6"><div style="font-weight:800;font-size:44px">www.mysoftkh.com</div><div>☎ 014 789 987 · 096 89 99 169</div><div>✉ Sales@mysoftkh.com</div></div></div>`);
+  },
+};
+
+function base() {
+  add(`<div class="tile abs" style="left:60px;top:70px;padding:12px 22px"><img src="logo.png" style="height:64px;display:block"></div>`);
+  add(`<div class="abs km" style="left:62px;top:190px;font-size:28px;color:#c9d8ff;font-weight:600">QR and Phones Attendance</div>`);
+  add(`<div class="abs" style="left:0;right:0;bottom:46px;text-align:center;font-size:28px;color:#c9d8ff;font-weight:600">www.mysoftkh.com · Telegram @mysoftkh</div>`);
+  visuals[S.visual]();
+}
+
+function caption() {
+  const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  let html = (S.lines || [S.text]).map(esc).join('<br>');
+  for (const h of S.hl || []) html = html.split(esc(h)).join(`<span class="hl">${esc(h)}</span>`);
+  const size = S.size ?? (S.big ? 76 : S.text.length > 70 ? 54 : 60);
+  const head = S.num ? `<div class="badge">${S.num}</div>` : S.check ? `<div class="check">${ic(CHECK, 58, '#fff')}</div>` : '';
+  add(`<div class="text" style="${S.big ? 'text-align:center;top:1340px' : ''}">${head}<div class="line km" style="font-size:${size}px">${html}</div></div>`);
+}
+
+window.__ready = fetch('../p/boxes.json').then((r) => r.json()).catch(() => ({})).then((b) => {
+  window.BOXES = b;
+  if (layer === 'base') base(); else { visuals.buttons && S.visual === 'buttons' && (() => { const k = 380 / 390; const bx = b[S.target]; if (bx) meta.target = [344 + (bx.x + bx.w / 2) * k, 454 + (bx.y + bx.h / 2) * k]; })(); caption(); }
+  return Promise.all([...document.images].map((i) => (i.complete ? 1 : new Promise((r) => { i.onload = i.onerror = r; }))));
+}).then(() => document.fonts.ready);
+</script>
+</body>
+</html>

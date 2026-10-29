@@ -1,0 +1,189 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>player</title>
+<style>html,body{margin:0;background:#000;overflow:hidden}canvas{display:block}</style>
+<script src="scenes.js"></script>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+// Plays the rendered scene frames with crossfades, a slow zoom towards what matters, a pointer that moves and taps,
+// captions that fade in and a thin progress bar - and records it all with MediaRecorder (H.264 MP4).
+const q = new URLSearchParams(location.search);
+const key = q.get('v');
+const V = VIDEOS[key];
+const [W, H] = V.size;
+const canvas = document.getElementById('c');
+canvas.width = W; canvas.height = H;
+const ctx = canvas.getContext('2d');
+const FADE = 0.45;
+const VISIBLE = V.visible ?? (V.device === 'phone' ? 1540 : 900); // canvas height above the caption band
+const PRESENTER = q.get('presenter') || V.presenter; // optional talking-head clip shown in V.presenterSlot
+let pres = null;
+const ease = (x) => (x <= 0 ? 0 : x >= 1 ? 1 : x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2);
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+const load = (src) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => ok(null); i.src = src; });
+
+let scenes = [];
+let total = 0;
+async function prepare() {
+  const meta = await (await fetch(`frames/${key}/meta.json`)).json();
+  let start = 0;
+  scenes = await Promise.all(V.scenes.map(async (s, i) => {
+    const sc = { ...s, ...meta[i], start: 0, base: await load(`frames/${key}/base-${i}.png`), cap: await load(`frames/${key}/cap-${i}.png`) };
+    return sc;
+  }));
+  for (const s of scenes) {
+    s.start = start; start += s.dur;
+    // promo: a slow push-in on every scene keeps the picture alive
+    if (V.compose === 'promo.html') { s.zoom = s.zoom ?? (s.target ? 1.12 : 1.05); s.focus = s.focus ?? [W / 2, 840]; }
+  }
+  total = start;
+  // Where the pointer comes from: the previous scene's target, or the bottom corner.
+  let prev = V.device === 'phone' ? [W * 0.75, H * 0.92] : [W * 0.82, H * 0.95];
+  for (const s of scenes) { s.from = prev; if (s.target) prev = s.target; }
+}
+
+/** Zoom factor and offset of a scene at local time u. */
+function view(s, u) {
+  if (!s.zoom || !s.focus) return { k: 1, ox: 0, oy: 0 };
+  const k = 1 + (s.zoom - 1) * ease((u - 0.9) / 1.6);
+  const ox = clamp(s.focus[0] * (1 - k) + (W / 2 - s.focus[0]) * (k - 1) * 0.35, W * (1 - k), 0);
+  let oy = clamp(s.focus[1] * (1 - k) + (VISIBLE / 2 - s.focus[1]) * (k - 1) * 0.35, H * (1 - k), 0);
+  if (s.focus[1] * k + oy > VISIBLE - 70) oy = clamp(VISIBLE - 70 - s.focus[1] * k, H * (1 - k), 0);
+  return { k, ox, oy };
+}
+
+function drawPointer(x, y, press) {
+  ctx.save();
+  if (V.device === 'phone') {
+    // finger tap: soft ring
+    ctx.globalAlpha = 0.9;
+    ctx.beginPath(); ctx.arc(x, y, 34 * (1 - press * 0.18), 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fill();
+    ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(15,23,42,0.75)'; ctx.stroke();
+  } else {
+    ctx.translate(x, y);
+    const s = 1.55 * (1 - press * 0.12);
+    ctx.scale(s, s);
+    ctx.shadowColor = 'rgba(0,0,0,0.35)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 3;
+    ctx.beginPath();
+    ctx.moveTo(0, 0); ctx.lineTo(0, 22); ctx.lineTo(5.5, 17); ctx.lineTo(9.5, 26); ctx.lineTo(13, 24.5); ctx.lineTo(9, 15.7); ctx.lineTo(16, 15.7); ctx.closePath();
+    ctx.fillStyle = '#fff'; ctx.fill();
+    ctx.shadowColor = 'transparent';
+    ctx.lineWidth = 1.6; ctx.strokeStyle = '#0f172a'; ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawRipple(x, y, r) {
+  if (r <= 0 || r >= 1) return;
+  ctx.save();
+  ctx.beginPath(); ctx.arc(x, y, 18 + r * (V.device === 'phone' ? 90 : 70), 0, Math.PI * 2);
+  ctx.lineWidth = 6; ctx.strokeStyle = `rgba(251,191,36,${1 - r})`; ctx.stroke();
+  ctx.restore();
+}
+
+/** Draws scene s at local time u with opacity a (base + pointer zoomed together; caption on top). */
+function drawScene(s, u, a, capAlpha) {
+  const { k, ox, oy } = view(s, u);
+  ctx.save();
+  ctx.globalAlpha = a;
+  ctx.setTransform(k, 0, 0, k, ox, oy);
+  if (s.base) ctx.drawImage(s.base, 0, 0, W, H);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  if (s.target) {
+    const m = ease((u - 0.5) / 1.0);
+    const tx = s.target[0] * k + ox, ty = s.target[1] * k + oy;
+    // the pointer travels in screen space from where it was to the target's current spot
+    const x = s.from[0] + (tx - s.from[0]) * m, y = s.from[1] + (ty - s.from[1]) * m;
+    const press = u > 1.6 && u < 1.85 ? Math.sin(((u - 1.6) / 0.25) * Math.PI) : 0;
+    drawRipple(tx, ty, (u - 1.65) / 0.7);
+    drawPointer(x, y, press);
+  }
+  ctx.globalAlpha = a * capAlpha;
+  if (s.cap) ctx.drawImage(s.cap, 0, 0, W, H);
+  ctx.restore();
+}
+
+function frame(t) {
+  ctx.fillStyle = '#06163d';
+  ctx.fillRect(0, 0, W, H);
+  let i = scenes.findIndex((s) => t < s.start + s.dur);
+  if (i < 0) i = scenes.length - 1;
+  const s = scenes[i];
+  const u = t - s.start;
+  const cap = ease((u - 0.15) / 0.45);
+  if (i > 0 && u < FADE) {
+    const p = scenes[i - 1];
+    drawScene(p, p.dur, 1, 1);
+    drawScene(s, u, ease(u / FADE), cap);
+  } else {
+    drawScene(s, u, i === 0 ? ease(u / 0.6) : 1, cap);
+  }
+  if (pres && V.presenterSlot) {
+    const { cx, cy, r } = V.presenterSlot;
+    const vw = pres.videoWidth || 1, vh = pres.videoHeight || 1, k = Math.max((2 * r) / vw, (2 * r) / vh);
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.45)'; ctx.shadowBlur = 30;
+    ctx.beginPath(); ctx.arc(cx, cy, r + 8, 0, Math.PI * 2); ctx.fillStyle = '#fbbf24'; ctx.fill();
+    ctx.shadowColor = 'transparent';
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.clip();
+    ctx.drawImage(pres, cx - (vw * k) / 2, cy - (vh * k) / 2, vw * k, vh * k);
+    ctx.restore();
+  }
+  // progress bar
+  ctx.fillStyle = 'rgba(255,255,255,0.18)';
+  ctx.fillRect(0, H - 8, W, 8);
+  ctx.fillStyle = '#fbbf24';
+  ctx.fillRect(0, H - 8, W * Math.min(1, t / total), 8);
+}
+
+window.__preview = async (t) => { if (!scenes.length) await prepare(); frame(t); return canvas.toDataURL('image/jpeg', 0.85); };
+
+window.__record = async () => {
+  await prepare();
+  let stream = canvas.captureStream(30);
+  let mimeType = 'video/mp4;codecs=avc1.640028';
+  if (PRESENTER) {
+    // the presenter's picture goes in the circle, her voice becomes the soundtrack
+    pres = document.createElement('video');
+    // loaded whole into memory: no seeking over HTTP needed
+    pres.src = URL.createObjectURL(await (await fetch(PRESENTER)).blob()); pres.playsInline = true; pres.preload = 'auto';
+    await new Promise((ok, fail) => { pres.oncanplay = ok; pres.onerror = () => fail(new Error('presenter clip cannot be played: ' + (pres.error && (pres.error.code + ' ' + pres.error.message)))); });
+    const ac = new AudioContext();
+    const dest = ac.createMediaStreamDestination();
+    ac.createMediaElementSource(pres).connect(dest);
+    stream = new MediaStream([...stream.getVideoTracks(), ...dest.stream.getAudioTracks()]);
+    mimeType = 'video/mp4;codecs=avc1.640028,mp4a.40.2';
+  }
+  const rec = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: V.device === 'phone' ? 9e6 : 10e6 });
+  const chunks = [];
+  rec.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+  frame(0);
+  rec.start(1000);
+  if (pres) await pres.play();
+  const t0 = performance.now();
+  await new Promise((done) => {
+    const tick = () => {
+      const t = (performance.now() - t0) / 1000;
+      frame(Math.min(t, total));
+      if (t >= total + 0.3) return done();
+      setTimeout(tick, 1000 / 60);
+    };
+    tick();
+  });
+  rec.stop();
+  await new Promise((ok) => (rec.onstop = ok));
+  const blob = new Blob(chunks, { type: 'video/mp4' });
+  const buf = new Uint8Array(await blob.arrayBuffer());
+  window.__bytes = buf;
+  return { size: buf.length, seconds: total, mime: rec.mimeType };
+};
+// Hands the recording over in base64 slices (the DevTools channel limits message size).
+window.__slice = (from, len) => { let s = ''; const b = window.__bytes.subarray(from, from + len); for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000)); return btoa(s); };
+</script>
+</body>
+</html>

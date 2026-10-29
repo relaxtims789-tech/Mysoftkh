@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>MySoft Attendance · Payment flow</title>
+<style>
+  @page { size: A4 landscape; margin: 0; }
+  :root {
+    --ink: #0f172a; --ink2: #475569; --ink3: #7a8699; --line: #cbd5e1; --bg: #f6f8fb;
+    --blue: #1d4ed8; --blue-soft: #e8efff;
+    --pw: #4f46e5; --pw-soft: #eef0ff;
+    --bank: #b45309; --bank-soft: #fff4e5;
+    --cash: #475569; --cash-soft: #f1f5f9;
+    --good: #0f8a3c; --good-soft: #e3f6ea;
+    --bad: #c62828; --bad-soft: #fde8e8;
+    --warn: #a15c00; --warn-soft: #fff2d9;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', 'Inter', system-ui, sans-serif; color: var(--ink); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .page { width: 297mm; height: 210mm; padding: 9mm 11mm 8mm; background: #fff; position: relative; overflow: hidden; page-break-after: always; display: flex; flex-direction: column; }
+  .page:last-child { page-break-after: auto; }
+
+  header { display: flex; align-items: center; gap: 16px; padding-bottom: 7px; border-bottom: 2px solid var(--blue); margin-bottom: 9px; }
+  header img { height: 46px; }
+  header .t { flex: 1; }
+  header h1 { margin: 0; font-size: 21px; letter-spacing: -0.01em; }
+  header p { margin: 2px 0 0; color: var(--ink2); font-size: 11.5px; }
+  header .url { font-size: 11px; color: var(--blue); font-weight: 700; text-align: right; }
+  footer { margin-top: auto; display: flex; justify-content: space-between; font-size: 9px; color: var(--ink3); padding-top: 5px; border-top: 1px solid #e2e8f0; }
+
+  .num { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; background: var(--blue); color: #fff; font-size: 11px; font-weight: 800; flex: none; }
+  .box { border: 1.5px solid var(--line); border-radius: 10px; padding: 7px 9px; background: #fff; font-size: 10.5px; line-height: 1.35; }
+  .box h3 { margin: 0 0 3px; font-size: 12px; display: flex; align-items: center; gap: 6px; }
+  .box p { margin: 0; color: var(--ink2); }
+  .box b { color: var(--ink); }
+  .tag { display: inline-block; font-size: 9px; font-weight: 700; padding: 1px 6px; border-radius: 999px; background: var(--blue-soft); color: var(--blue); }
+
+  /* Row of the first steps */
+  .steps { display: grid; grid-template-columns: 1fr 22px 1fr 22px 1fr 22px 1.15fr; align-items: stretch; }
+  .steps .box { border-color: #bfd0f8; background: #fbfcff; }
+  .arrow-r { display: flex; align-items: center; justify-content: center; color: var(--blue); }
+  .arrow-r svg, .arrow-d svg { display: block; }
+
+  /* Branch connector */
+  .branch { height: 30px; position: relative; }
+  .branch svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .question { position: absolute; left: 50%; top: 2px; transform: translateX(-50%); background: var(--ink); color: #fff; font-size: 11px; font-weight: 700; padding: 3px 12px; border-radius: 999px; white-space: nowrap; }
+
+  .lanes { display: grid; grid-template-columns: 1fr 1fr 0.78fr; gap: 12px; }
+  .lane { border-radius: 12px; padding: 7px; display: flex; flex-direction: column; gap: 0; }
+  .lane .head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 2px 4px 6px; }
+  .lane .head b { font-size: 13px; }
+  .lane .head span { font-size: 9.5px; font-weight: 700; padding: 2px 7px; border-radius: 999px; color: #fff; }
+  .lane .box { border-width: 1.5px; }
+  .lane .arrow-d { display: flex; justify-content: center; height: 13px; }
+  .pw { background: var(--pw-soft); } .pw .head b { color: var(--pw); } .pw .head span { background: var(--pw); } .pw .box { border-color: #c7c9fb; } .pw .arrow-d { color: var(--pw); }
+  .bank { background: var(--bank-soft); } .bank .head b { color: var(--bank); } .bank .head span { background: var(--bank); } .bank .box { border-color: #f3d3a4; } .bank .arrow-d { color: var(--bank); }
+  .cash { background: var(--cash-soft); } .cash .head b { color: var(--cash); } .cash .head span { background: var(--cash); } .cash .box { border-color: #cfd8e3; } .cash .arrow-d { color: var(--cash); }
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .ok { border-color: #9fd8b2 !important; background: var(--good-soft) !important; }
+  .no { border-color: #f2b8b8 !important; background: var(--bad-soft) !important; }
+  .who { font-size: 8.5px; font-weight: 700; color: var(--ink3); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 1px; display: block; }
+
+  .merge { height: 22px; position: relative; }
+  .merge svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .done { border: 2px solid var(--good); background: var(--good-soft); border-radius: 12px; padding: 8px 14px; display: grid; grid-template-columns: auto 1fr 1fr 1fr; gap: 14px; align-items: center; font-size: 10.5px; }
+  .done .big { font-size: 15px; font-weight: 800; color: var(--good); display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+  .done p { margin: 0; color: var(--ink2); line-height: 1.35; } .done p b { color: var(--ink); }
+
+  /* Page 2 */
+  .grid2 { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 14px; flex: 1; min-height: 0; }
+  .panel { border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 9px 11px; background: #fff; }
+  .panel h2 { margin: 0 0 7px; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+  .panel h2 .tag { font-size: 9px; }
+  .stack { display: flex; flex-direction: column; gap: 12px; }
+  .timeline { display: grid; grid-template-columns: 1.6fr 0.9fr 1.3fr; border-radius: 10px; overflow: hidden; font-size: 10px; }
+  .timeline div { padding: 7px 9px; line-height: 1.3; }
+  .timeline b { display: block; font-size: 11.5px; margin-bottom: 2px; }
+  .t1 { background: var(--good-soft); border-left: 4px solid var(--good); } .t1 b { color: var(--good); }
+  .t2 { background: var(--warn-soft); } .t2 b { color: var(--warn); }
+  .t3 { background: var(--bad-soft); } .t3 b { color: var(--bad); }
+  .scale { display: grid; grid-template-columns: 1.6fr 0.9fr 1.3fr; font-size: 8.5px; color: var(--ink3); margin-top: 3px; }
+  .scale span:nth-child(2) { border-left: 1px dashed var(--ink3); padding-left: 4px; } .scale span:nth-child(3) { border-left: 1px dashed var(--ink3); padding-left: 4px; }
+  .note { font-size: 10px; color: var(--ink2); margin: 6px 0 0; line-height: 1.4; }
+  .note b { color: var(--ink); }
+
+  .states { position: relative; height: 150px; }
+  .states svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+  .st { position: absolute; transform: translate(-50%, -50%); border-radius: 999px; padding: 5px 11px; font-size: 10.5px; font-weight: 700; white-space: nowrap; border: 1.5px solid; }
+  .s-unpaid { background: var(--warn-soft); color: var(--warn); border-color: #f0cf96; }
+  .s-sub { background: var(--blue-soft); color: var(--blue); border-color: #bcd0fb; }
+  .s-paid { background: var(--good-soft); color: var(--good); border-color: #9fd8b2; }
+  .s-rej { background: var(--bad-soft); color: var(--bad); border-color: #f2b8b8; }
+  .s-can { background: #f1f5f9; color: #64748b; border-color: #cbd5e1; }
+  .lbl { position: absolute; transform: translate(-50%, -50%); font-size: 8.8px; color: var(--ink2); background: #fff; padding: 0 3px; white-space: nowrap; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 9.8px; }
+  th { text-align: left; font-size: 9px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink3); padding: 3px 6px; border-bottom: 1.5px solid #e2e8f0; }
+  td { padding: 4px 6px; border-bottom: 1px solid #eef2f6; vertical-align: top; line-height: 1.35; color: var(--ink2); }
+  td:first-child { color: var(--ink); font-weight: 700; white-space: nowrap; }
+  .check { list-style: none; margin: 0; padding: 0; font-size: 10px; display: flex; flex-direction: column; gap: 4px; }
+  .check li { display: flex; gap: 7px; line-height: 1.35; color: var(--ink2); }
+  .check li::before { content: ''; flex: none; width: 11px; height: 11px; border: 1.5px solid var(--blue); border-radius: 3px; margin-top: 1px; }
+  .check b { color: var(--ink); }
+  .mono { font-family: Consolas, monospace; font-size: 9.5px; color: var(--ink); }
+</style>
+</head>
+<body>
+
+<!-- ======================= PAGE 1 ======================= -->
+<section class="page">
+  <header>
+    <img src="file:///D:/QR%20Scan%20Attendance%20System/apps/web/public/brand/mysoft-attendance.png" alt="MySoft Attendance">
+    <div class="t">
+      <h1>Payment flow · QR and Phones Attendance</h1>
+      <p>From the website visit to a paid plan: how customers pay, and how the system and MySoft confirm the payment.</p>
+    </div>
+    <div class="url">www.mysoftkh.com<br><span style="color:var(--ink3);font-weight:600">attendance.mysoftkh.com</span></div>
+  </header>
+
+  <div class="steps">
+    <div class="box"><h3><span class="num">1</span>Visit the website</h3><p><b>www.mysoftkh.com</b> → Features, <b>Prices</b> (by number of staff, branches included), FAQ, Telegram contact → <b>Start free trial</b>.</p></div>
+    <div class="arrow-r"><svg width="18" height="14" viewBox="0 0 18 14"><path d="M1 7h13M10 2l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="box"><h3><span class="num">2</span>Sign up</h3><p>Company name, your name, phone, email, password, <b>number of staff</b>. The company and its admin account are created and the customer is signed in.</p></div>
+    <div class="arrow-r"><svg width="18" height="14" viewBox="0 0 18 14"><path d="M1 7h13M10 2l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="box"><h3><span class="num">3</span>Free trial</h3><p><b>1–3 months</b> (set by the super admin). All features. A reminder banner shows <b>7 days</b> before the trial ends.</p></div>
+    <div class="arrow-r"><svg width="18" height="14" viewBox="0 0 18 14"><path d="M1 7h13M10 2l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="box"><h3><span class="num">4</span>Choose a plan · <span class="tag">Billing &amp; plan</span></h3><p>Staff range (and its branches), <b>Monthly</b> or <b>Yearly</b> (months free). An <b>invoice</b> is created, e.g. <span class="mono">INV-2026-01001</span>, status <b>Unpaid</b>. The new period starts after the current one ends, so no days are lost.</p></div>
+  </div>
+
+  <div class="branch">
+    <svg viewBox="0 0 1000 30" preserveAspectRatio="none"><path d="M880 0 V8 H500 M500 8 V12 M182 22 V14 H862 V22 M542 14 V22" fill="none" stroke="#94a3b8" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg>
+    <span class="question">How does the customer pay?</span>
+  </div>
+
+  <div class="lanes">
+    <div class="lane pw">
+      <div class="head"><b>A · ABA PayWay (online)</b><span>Automatic · seconds</span></div>
+      <div class="box"><span class="who">Customer</span><h3>Pay online · ABA PayWay</h3><p>The system sends a <b>signed</b> checkout (invoice, amount) to ABA PayWay's secure page.</p></div>
+      <div class="arrow-d"><svg width="14" height="13" viewBox="0 0 14 13"><path d="M7 1v9M3 6l4 5 4-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="box"><span class="who">Customer on ABA PayWay</span><h3>Pays with KHQR, ABA Pay or card</h3><p>KHQR works from <b>ABA, ACLEDA or any Cambodian bank app</b>.</p></div>
+      <div class="arrow-d"><svg width="14" height="13" viewBox="0 0 14 13"><path d="M7 1v9M3 6l4 5 4-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="box"><span class="who">System</span><h3>Confirms with ABA PayWay</h3><p>PayWay notifies the server; the server <b>asks PayWay directly</b>: approved, full amount, USD. The notice alone is never trusted.</p></div>
+      <div class="arrow-d"><svg width="14" height="13" viewBox="0 0 14 13"><path d="M7 1v9M3 6l4 5 4-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="split">
+        <div class="box ok"><h3>✓ Approved</h3><p>Invoice <b>Paid</b> at once. Customer returns to Billing: "Payment received".</p></div>
+        <div class="box no"><h3>✗ Not paid</h3><p>Declined, cancelled or less money: stays <b>Unpaid</b>; pay again.</p></div>
+      </div>
+    </div>
+
+    <div class="lane bank">
+      <div class="head"><b>B · Bank transfer (ABA / ACLEDA)</b><span>Checked by MySoft</span></div>
+      <div class="box"><span class="who">Customer</span><h3>Pay by bank transfer</h3><p>Sees MySoft's <b>account name, number and KHQR</b>, the <b>exact amount</b>, and the remark to write: the <b>invoice number</b>.</p></div>
+      <div class="arrow-d"><svg width="14" height="13" viewBox="0 0 14 13"><path d="M7 1v9M3 6l4 5 4-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="box"><span class="who">Customer</span><h3>Transfers, then uploads the receipt</h3><p>Screenshot or PDF from the bank app (max 5 MB). Invoice: <b>Receipt sent · checking</b>.</p></div>
+      <div class="arrow-d"><svg width="14" height="13" viewBox="0 0 14 13"><path d="M7 1v9M3 6l4 5 4-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="box"><span class="who">Super admin (MySoft)</span><h3>Telegram alert → Platform › Payments</h3><p>Opens the receipt and compares it with the <b>ABA / ACLEDA statement</b> (amount, remark, date).</p></div>
+      <div class="arrow-d"><svg width="14" height="13" viewBox="0 0 14 13"><path d="M7 1v9M3 6l4 5 4-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="split">
+        <div class="box ok"><h3>✓ Approve</h3><p>Invoice <b>Paid</b>. Usually within one working day.</p></div>
+        <div class="box no"><h3>✗ Reject</h3><p>With a reason the customer sees; they can <b>send the receipt again</b>.</p></div>
+      </div>
+    </div>
+
+    <div class="lane cash">
+      <div class="head"><b>C · Cash or other</b><span>Recorded by MySoft</span></div>
+      <div class="box"><span class="who">Customer</span><h3>Pays MySoft directly</h3><p>Cash at the office, another bank, or an agreed deal.</p></div>
+      <div class="arrow-d"><svg width="14" height="13" viewBox="0 0 14 13"><path d="M7 1v9M3 6l4 5 4-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="box"><span class="who">Super admin (MySoft)</span><h3>Subscriptions › Record payment</h3><p>Plan, 1 or 12 months, amount received, note. Paid immediately.</p></div>
+      <div class="arrow-d"><svg width="14" height="13" viewBox="0 0 14 13"><path d="M7 1v9M3 6l4 5 4-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="box"><span class="who">Also by the super admin</span><h3>Subscriptions › Adjust</h3><p>Longer trial, extra time, other plan, custom branch limit, or <b>Free plan</b>.</p></div>
+    </div>
+  </div>
+
+  <div class="merge">
+    <svg viewBox="0 0 1000 22" preserveAspectRatio="none"><path d="M182 0 V10 H862 V0 M542 0 V10 M500 10 V22" fill="none" stroke="#0f8a3c" stroke-width="1.8" vector-effect="non-scaling-stroke"/></svg>
+  </div>
+
+  <div class="done">
+    <div class="big"><svg width="22" height="22" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#0f8a3c"/><path d="M7 12.5l3.2 3.2L17 9" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Invoice PAID</div>
+    <p><b>Plan extended:</b> "paid until" moves forward by 1 or 12 months, starting after the current trial / paid period.</p>
+    <p><b>Limits from the plan:</b> number of active staff and branches; everything keeps working.</p>
+    <p><b>Everyone is told:</b> Telegram alert to MySoft; the invoice shows <b>Paid</b> in the customer's Billing &amp; plan.</p>
+  </div>
+
+  <footer><span>MySoft KH · MySoft Attendance · QR and Phones Attendance</span><span>Page 1 of 2 · Payment flow</span></footer>
+</section>
+
+<!-- ======================= PAGE 2 ======================= -->
+<section class="page">
+  <header>
+    <img src="file:///D:/QR%20Scan%20Attendance%20System/apps/web/public/brand/mysoft-attendance.png" alt="MySoft Attendance">
+    <div class="t">
+      <h1>Payment rules, statuses and responsibilities</h1>
+      <p>What happens when a payment is late, how an invoice moves between statuses, upgrades, and who does what.</p>
+    </div>
+    <div class="url">www.mysoftkh.com</div>
+  </header>
+
+  <div class="grid2">
+    <div class="stack">
+      <div class="panel">
+        <h2>If the customer does not pay <span class="tag">automatic</span></h2>
+        <div class="timeline">
+          <div class="t1"><b>Free trial / paid period</b>Everything works. Banner 7 days before the end (trial) or 5 days (paid).</div>
+          <div class="t2"><b>7 grace days</b>Everything still works; "Payment due" warnings.</div>
+          <div class="t3"><b>Read-only</b>Admins can sign in, view, <strong>export</strong> and <strong>pay</strong>. Staff cannot scan; nothing can be changed.</div>
+        </div>
+        <div class="scale"><span>start</span><span>end date</span><span>end date + 7 days</span></div>
+        <p class="note">As soon as an invoice is <b>Paid</b> (any method), the company is active again: no data is lost. The grace length is set in Plans &amp; settings.</p>
+      </div>
+
+      <div class="panel">
+        <h2>Invoice statuses</h2>
+        <div class="states">
+          <svg viewBox="0 0 500 150" preserveAspectRatio="none">
+            <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#64748b"/></marker></defs>
+            <g fill="none" stroke="#94a3b8" stroke-width="1.5" vector-effect="non-scaling-stroke">
+              <path d="M95 75 H195" marker-end="url(#ah)"/>
+              <path d="M300 75 H392" marker-end="url(#ah)"/>
+              <path d="M60 60 C 90 10, 380 5, 410 60" marker-end="url(#ah)"/>
+              <path d="M250 90 L 250 118" marker-end="url(#ah)"/>
+              <path d="M225 130 C 170 135, 170 100, 215 88" marker-end="url(#ah)"/>
+              <path d="M60 90 L 60 118" marker-end="url(#ah)"/>
+            </g>
+          </svg>
+          <span class="st s-unpaid" style="left:12%;top:50%">Unpaid</span>
+          <span class="st s-sub" style="left:50%;top:50%">Receipt sent · checking</span>
+          <span class="st s-paid" style="left:86%;top:50%">Paid ✓</span>
+          <span class="st s-rej" style="left:52%;top:89%">Rejected</span>
+          <span class="st s-can" style="left:12%;top:89%">Cancelled</span>
+          <span class="lbl" style="left:29%;top:41%">receipt uploaded</span>
+          <span class="lbl" style="left:69%;top:41%">super admin approves</span>
+          <span class="lbl" style="left:50%;top:9%">ABA PayWay confirmed · or recorded by the super admin</span>
+          <span class="lbl" style="left:60%;top:70%">rejected</span>
+          <span class="lbl" style="left:33%;top:97%">uploads again</span>
+          <span class="lbl" style="left:23%;top:70%">cancel or new invoice</span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Upgrades and plan changes</h2>
+        <p class="note" style="margin-top:0">
+          <b>During the trial:</b> the customer changes the plan freely (it must fit their active staff and branches).<br>
+          <b>During a paid period, bigger plan:</b> an <b>upgrade invoice</b> for the price difference × the months left; the plan changes as soon as it is paid, the end date stays.<br>
+          <b>Smaller plan:</b> chosen when renewing; refused while the company has more active staff or branches than it allows.
+        </p>
+      </div>
+    </div>
+
+    <div class="stack">
+      <div class="panel">
+        <h2>Who does what</h2>
+        <table>
+          <thead><tr><th>Who</th><th>Does</th><th>Where</th></tr></thead>
+          <tbody>
+            <tr><td>Customer (company admin)</td><td>Signs up, chooses the plan, pays (PayWay or bank transfer + receipt), sees invoices</td><td><span class="mono">/signup</span>, <span class="mono">/admin/billing</span></td></tr>
+            <tr><td>System</td><td>Trial dates, invoices, PayWay checkout and confirmation, plan extension, staff/branch limits, grace and read-only, Telegram alerts</td><td>automatic</td></tr>
+            <tr><td>ABA PayWay</td><td>Takes the payment (KHQR, ABA Pay, card) and confirms it to the system</td><td>ABA's secure page</td></tr>
+            <tr><td>Super admin (MySoft)</td><td>Checks receipts and approves / rejects, records cash, adjusts trials, plans and branch limits</td><td>Platform › Payments, Subscriptions</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="panel">
+        <h2>MySoft set-up checklist <span class="tag">Platform › Plans &amp; settings</span></h2>
+        <ul class="check">
+          <li><span><b>Prices</b> for each staff range, and <b>branches</b> per plan (1 · 2 · 10 · unlimited).</span></li>
+          <li><span><b>Free trial</b> 1–3 months, <b>grace days</b> (7), <b>free months</b> when paying yearly (2).</span></li>
+          <li><span><b>Bank accounts</b>: ABA and ACLEDA account name, number and KHQR image.</span></li>
+          <li><span><b>ABA PayWay</b>: merchant ID and API key from ABA (paywaysales@ababank.com); give ABA the pushback URL <span class="mono">https://attendance.mysoftkh.com/api/public/payway/callback</span>; test in sandbox, then turn sandbox off.</span></li>
+          <li><span><b>Telegram alerts</b>: bot token and chat ID, to hear about every sign-up, receipt and payment.</span></li>
+          <li><span><b>Website contact</b>: phone, Telegram (@mysoftkh) and email.</span></li>
+        </ul>
+      </div>
+
+      <div class="panel">
+        <h2>Security</h2>
+        <p class="note" style="margin-top:0">
+          PayWay requests are <b>signed</b> with MySoft's secret API key (HMAC-SHA512), and every payment is <b>confirmed with ABA PayWay</b> before a plan is extended.
+          Receipts are stored privately (only the customer and the super admin can open them). Every payment, approval and change is written to the <b>audit log</b>.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <footer><span>MySoft KH · MySoft Attendance · QR and Phones Attendance</span><span>Page 2 of 2 · Payment rules</span></footer>
+</section>
+
+</body>
+</html>

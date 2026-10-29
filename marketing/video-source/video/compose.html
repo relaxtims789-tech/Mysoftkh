@@ -1,0 +1,217 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>scene</title>
+<!-- One scene of a guide video. ?v=v1&i=3&layer=base|cap. "base" = background + device + screen (zoomable);
+     "cap" = caption bar on a transparent background (drawn on top, never zoomed). window.__meta = pointer target etc. -->
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { overflow: hidden; }
+  body { font-family: 'Segoe UI', 'Khmer UI', sans-serif; color: #fff; -webkit-font-smoothing: antialiased; }
+  .km { font-family: 'Khmer UI', 'Segoe UI', sans-serif; }
+  .stage { position: relative; overflow: hidden; }
+  .bg {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(1100px 700px at 85% 15%, rgba(59,130,246,0.55), transparent 70%),
+      radial-gradient(900px 700px at 0% 100%, rgba(29,78,216,0.55), transparent 70%),
+      linear-gradient(160deg, #06163d 0%, #0b2a6f 55%, #123b9e 100%);
+  }
+  .bg::after { content: ''; position: absolute; inset: 0; background-image: radial-gradient(rgba(255,255,255,0.08) 1.4px, transparent 1.6px); background-size: 30px 30px; }
+  body.cap .bg { display: none; }
+  body.cap { background: transparent; }
+
+  /* Browser window (video 1) */
+  .browser { position: absolute; border-radius: 16px; overflow: hidden; background: #fff; box-shadow: 0 30px 80px rgba(0,0,0,0.5); }
+  .browser .bar { height: 46px; background: #e9edf4; display: flex; align-items: center; gap: 10px; padding: 0 16px; }
+  .browser .dot { width: 13px; height: 13px; border-radius: 50%; }
+  .browser .url { margin-left: 18px; flex: 1; max-width: 760px; height: 30px; border-radius: 15px; background: #fff; color: #334155; font-size: 16px; display: flex; align-items: center; gap: 8px; padding: 0 14px; }
+  .browser img { display: block; width: 100%; }
+
+  /* Phone (video 2) */
+  .phone { position: absolute; background: #0b1220; border-radius: 74px; padding: 20px; box-shadow: 0 40px 90px rgba(0,0,0,0.55), inset 0 0 0 3px #2a3550; }
+  .phone .screen { position: relative; border-radius: 56px; overflow: hidden; background: #fff; }
+  .phone .screen img { display: block; width: 100%; }
+  .phone .island { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); width: 150px; height: 40px; border-radius: 20px; background: #0b1220; }
+
+  /* Caption */
+  .caption { position: absolute; display: flex; align-items: center; gap: 22px; }
+  .caption .step { flex: none; width: 74px; height: 74px; border-radius: 50%; background: #fbbf24; color: #3a2400; display: grid; place-items: center; font-weight: 800; font-size: 40px; box-shadow: 0 8px 22px rgba(0,0,0,0.3); }
+  .caption .text { flex: 1; }
+  .caption .t-km { font-weight: 700; line-height: 1.5; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,0.35); }
+  .caption .t-en { color: #c9d8ff; line-height: 1.35; margin-top: 2px; }
+  .brandtile { background: #fff; border-radius: 14px; padding: 8px 14px; box-shadow: 0 8px 24px rgba(0,0,0,0.25); }
+  .brandtile img { display: block; }
+
+  /* Title / end / custom slides */
+  .center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 26px; padding: 80px; }
+  .pill { border: 2px solid rgba(255,255,255,0.35); border-radius: 999px; padding: 10px 26px; color: #c9d8ff; font-weight: 600; }
+  .amber { color: #fbbf24; }
+  .card { background: #fff; color: #0f172a; border-radius: 26px; box-shadow: 0 20px 50px rgba(0,0,0,0.35); }
+</style>
+<script src="scenes.js"></script>
+</head>
+<body>
+<div class="stage" id="stage"><div class="bg"></div></div>
+<script>
+const q = new URLSearchParams(location.search);
+const V = VIDEOS[q.get('v')];
+const S = V.scenes[Number(q.get('i'))];
+const layer = q.get('layer') || 'base';
+const [W, H] = V.size;
+const wide = W > H;
+const stage = document.getElementById('stage');
+stage.style.width = W + 'px'; stage.style.height = H + 'px';
+document.body.classList.toggle('cap', layer === 'cap');
+const el = (html) => { const d = document.createElement('div'); d.innerHTML = html.trim(); return d.firstChild; };
+const meta = { target: null, focus: null };
+window.__meta = meta;
+
+function caption(top, left, width, kmSize, enSize, step) {
+  stage.appendChild(el(`<div style="position:absolute;left:0;right:0;top:${top - (wide ? 24 : 30)}px;bottom:0;background:rgba(6,22,61,0.96);border-top:3px solid #fbbf24"></div>`));
+  const c = el(`<div class="caption" style="top:${top}px;left:${left}px;width:${width}px">
+    ${step ? `<div class="step">${step}</div>` : ''}
+    <div class="text"><div class="t-km km" style="font-size:${kmSize}px">${S.km}</div><div class="t-en" style="font-size:${enSize}px">${S.en}</div></div></div>`);
+  stage.appendChild(c);
+}
+
+const LOCK = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.6"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+
+function screenScene() {
+  const img = new Image();
+  img.src = V.shots + S.img;
+  const box = (window.BOXES || {})[S.target];
+  if (V.device === 'browser') {
+    const left = 220, top = 30, width = 1480;
+    if (layer === 'base') {
+      const b = el(`<div class="browser" style="left:${left}px;top:${top}px;width:${width}px">
+        <div class="bar"><span class="dot" style="background:#ef4444"></span><span class="dot" style="background:#f59e0b"></span><span class="dot" style="background:#22c55e"></span>
+        <span class="url">${LOCK}<span>${S.url || ''}</span></span></div></div>`);
+      b.appendChild(img);
+      stage.appendChild(b);
+    } else {
+      caption(930, 220, 1480, 38, 25, S.step);
+    }
+    const k = width / V.viewport[0];
+    if (box) meta.target = [left + (box.x + box.w / 2) * k, top + 46 + (box.y + box.h / 2) * k];
+    meta.focus = meta.target ?? (S.zoomAt ? [left + width * S.zoomAt[0], top + 46 + (width * 810 / 1440) * S.zoomAt[1]] : null);
+  } else {
+    const sw = 600, pad = 20, left = (W - sw) / 2 - pad, top = 150;
+    if (layer === 'base') {
+      const p = el(`<div class="phone" style="left:${left}px;top:${top}px;width:${sw + pad * 2}px"><div class="screen"></div></div>`);
+      p.firstChild.appendChild(img);
+      p.firstChild.appendChild(el('<div class="island"></div>'));
+      stage.appendChild(p);
+      const brand = el(`<div class="brandtile" style="position:absolute;left:50%;top:40px;transform:translateX(-50%)"><img src="logo.png" style="height:56px"></div>`);
+      stage.appendChild(brand);
+    } else {
+      caption(1580, 70, W - 140, 44, 30, S.step);
+    }
+    const k = sw / V.viewport[0];
+    if (box) meta.target = [left + pad + (box.x + box.w / 2) * k, top + pad + (box.y + box.h / 2) * k];
+    meta.focus = meta.target ?? (S.zoomAt ? [left + pad + sw * S.zoomAt[0], top + pad + (sw * 844 / 390) * S.zoomAt[1]] : null);
+  }
+}
+
+const QRBOX = '<svg width="58" height="58" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">';
+function titleScene() {
+  if (layer !== 'base') return;
+  const big = wide ? 96 : 92;
+  stage.appendChild(el(`<div class="center">
+    <div class="brandtile" style="padding:16px 28px"><img src="logo.png" style="height:${wide ? 92 : 100}px"></div>
+    <div class="pill km" style="font-size:${wide ? 26 : 30}px">វីដេអូណែនាំទី ${S.badge} · Guide ${S.badge}</div>
+    <div class="km amber" style="font-size:${big}px;font-weight:700;line-height:1.45">${S.km}</div>
+    <div style="font-size:${wide ? 50 : 52}px;font-weight:800;letter-spacing:-0.5px;line-height:1.2">${S.en}</div>
+    <div class="km" style="font-size:${wide ? 32 : 36}px;color:#c9d8ff;line-height:1.6">${S.subKm}<br><span style="font-family:'Segoe UI'">${S.subEn}</span></div>
+  </div>`));
+}
+
+function endScene() {
+  if (layer !== 'base') return;
+  stage.appendChild(el(`<div class="center" style="gap:${wide ? 22 : 34}px">
+    <div style="width:${wide ? 110 : 150}px;height:${wide ? 110 : 150}px;border-radius:50%;background:#dcfce7;color:#15803d;display:grid;place-items:center">
+      <svg width="${wide ? 64 : 88}" height="${wide ? 64 : 88}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+    <div class="km" style="font-size:${wide ? 60 : 64}px;font-weight:700;line-height:1.45">${S.km}</div>
+    <div style="font-size:${wide ? 38 : 40}px;font-weight:700;color:#c9d8ff">${S.en}</div>
+    <div class="pill km" style="font-size:${wide ? 26 : 30}px;line-height:1.6">${S.nextKm}<br><span style="font-family:'Segoe UI'">${S.nextEn}</span></div>
+    <div style="display:flex;${wide ? '' : 'flex-direction:column;'}align-items:center;gap:${wide ? 40 : 30}px;margin-top:10px">
+      <div class="card" style="padding:12px;width:${wide ? 170 : 230}px;text-align:center"><img src="telegram-qr.png" style="width:100%;display:block"><div style="font-size:${wide ? 15 : 20}px;font-weight:700;margin-top:4px">Telegram @mysoftkh</div></div>
+      <div style="text-align:${wide ? 'left' : 'center'};font-size:${wide ? 30 : 34}px;line-height:1.7">
+        <div style="font-weight:800;font-size:${wide ? 40 : 46}px">www.mysoftkh.com</div>
+        <div>☎ 014 789 987 · 096 89 99 169</div>
+        <div>✉ Sales@mysoftkh.com</div>
+      </div>
+    </div>
+  </div>`));
+}
+
+function needScene() {
+  if (layer !== 'base') return;
+  const item = (n, km, en, value, icon) => `<div class="card" style="display:flex;align-items:center;gap:28px;padding:30px 36px;text-align:left">
+      <div style="flex:none;width:96px;height:96px;border-radius:26px;background:#e8efff;color:#1d4ed8;display:grid;place-items:center">${icon}</div>
+      <div style="flex:1"><div class="km" style="font-size:40px;font-weight:700;line-height:1.5">${n}. ${km}</div><div style="font-size:28px;color:#475569">${en}</div></div>
+      <div style="font-family:Consolas,monospace;font-size:34px;font-weight:700;color:#1d4ed8;background:#f1f5f9;border-radius:14px;padding:10px 18px">${value}</div></div>`;
+  const ic = (p) => `<svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+  stage.appendChild(el(`<div class="center" style="gap:34px;justify-content:flex-start;padding-top:170px">
+    <div class="km amber" style="font-size:60px;font-weight:700;line-height:1.45">${S.km}</div>
+    <div style="font-size:38px;font-weight:700;color:#c9d8ff;margin-top:-14px">${S.en}</div>
+    <div style="display:flex;flex-direction:column;gap:26px;width:100%;margin-top:30px">
+      ${item('១', 'លេខកូដក្រុមហ៊ុន', 'Company code', 'sokmean', ic('<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>'))}
+      ${item('២', 'លេខសម្គាល់បុគ្គលិក', 'Employee ID', 'E001', ic('<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>'))}
+      ${item('៣', 'ពាក្យសម្ងាត់បណ្តោះអាសន្ន', 'Temporary password', '••••••', ic('<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>'))}
+    </div>
+    <div class="km" style="font-size:32px;color:#c9d8ff;line-height:1.7;margin-top:30px">អ្នកគ្រប់គ្រងទទួលបានព័ត៌មានទាំងនេះ ពេលបន្ថែមអ្នកជាបុគ្គលិក<br><span style="font-family:'Segoe UI'">Your admin gets these when adding you as an employee</span></div>
+  </div>`));
+}
+
+function installScene() {
+  if (layer !== 'base') return;
+  const share = '<svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M6 11v9h12v-9"/></svg>';
+  const dots = '<svg width="44" height="44" viewBox="0 0 24 24" fill="#1d4ed8"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>';
+  const plus = '<svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="5"/><path d="M12 8v8M8 12h8"/></svg>';
+  const row = (icon, km, en) => `<div style="display:flex;align-items:center;gap:22px;padding:14px 0">
+    <div style="flex:none;width:76px;height:76px;border-radius:20px;background:#e8efff;display:grid;place-items:center">${icon}</div>
+    <div><div class="km" style="font-size:34px;font-weight:700;line-height:1.5">${km}</div><div style="font-size:24px;color:#475569">${en}</div></div></div>`;
+  const panel = (title, sub, rows) => `<div class="card" style="padding:30px 38px;text-align:left;width:100%">
+    <div style="font-size:36px;font-weight:800">${title} <span style="font-size:26px;font-weight:600;color:#64748b">${sub}</span></div>${rows}</div>`;
+  stage.appendChild(el(`<div class="center" style="gap:28px;justify-content:flex-start;padding-top:150px">
+    <div class="km amber" style="font-size:58px;font-weight:700;line-height:1.45">${S.km}</div>
+    <div style="font-size:36px;font-weight:700;color:#c9d8ff;margin-top:-12px">${S.en}</div>
+    ${panel('iPhone', '· Safari', row(share, 'ចុចប៊ូតុង Share', 'Tap the Share button') + row(plus, 'ជ្រើស «Add to Home Screen» → Add', 'Choose “Add to Home Screen”, then Add'))}
+    ${panel('Android', '· Chrome', row(dots, 'ចុច ⋮ នៅជ្រុងខាងលើ', 'Tap ⋮ at the top right') + row(plus, 'ជ្រើស «Install app» ឬ «Add to Home screen»', 'Choose “Install app” or “Add to Home screen”'))}
+    <div style="display:flex;align-items:center;gap:26px;margin-top:10px">
+      <div style="width:130px;height:130px;border-radius:30px;background:#fff;display:grid;place-items:center;box-shadow:0 12px 30px rgba(0,0,0,0.35)"><img src="app-icon.png" style="width:110px;border-radius:24px"></div>
+      <div style="text-align:left"><div class="km" style="font-size:34px;font-weight:700;line-height:1.5">បើកកម្មវិធីពីរូបតំណាងនេះជានិច្ច</div><div style="font-size:26px;color:#c9d8ff">Always open attendance from this icon</div></div>
+    </div>
+  </div>`));
+}
+
+function scanScene() {
+  if (layer !== 'base') return;
+  // The printed poster seen through the phone camera, with the permission prompts the phone shows the first time.
+  stage.appendChild(el(`<div style="position:absolute;inset:0">
+    <div class="km amber" style="position:absolute;left:0;right:0;top:150px;text-align:center;font-size:56px;font-weight:700;line-height:1.45;padding:0 60px">ស្កេន QR នៅច្រកចូល</div>
+    <div style="position:absolute;left:0;right:0;top:240px;text-align:center;font-size:36px;font-weight:700;color:#c9d8ff">Scan the QR at the entrance</div>
+    <div style="position:absolute;left:140px;top:330px;width:800px;height:920px;border-radius:30px;overflow:hidden;background:#eef1f6;box-shadow:0 30px 70px rgba(0,0,0,0.5)">
+      <img src="../v1/13b-qr-print-scrolled.png" style="position:absolute;left:-376px;top:115px;width:1552px">
+      <div style="position:absolute;left:130px;top:200px;width:540px;height:540px;border-radius:26px;box-shadow:0 0 0 1400px rgba(0,0,0,0.5)"></div>
+      ${['left:130px;top:200px;border-width:10px 0 0 10px', 'left:580px;top:200px;border-width:10px 10px 0 0', 'left:130px;top:650px;border-width:0 0 10px 10px', 'left:580px;top:650px;border-width:0 10px 10px 0'].map((p) => `<div style="position:absolute;${p};width:90px;height:90px;border-style:solid;border-color:#fbbf24;border-radius:8px"></div>`).join('')}
+      <div style="position:absolute;left:150px;width:500px;top:468px;height:4px;background:#fbbf24;box-shadow:0 0 18px #fbbf24;opacity:0.9"></div>
+    </div>
+    <div style="position:absolute;left:110px;right:110px;top:1290px;display:flex;flex-direction:column;gap:18px">
+      ${[['📍', 'អនុញ្ញាតទីតាំង (Location) → Allow', 'Allow location'], ['📷', 'អនុញ្ញាតកាមេរ៉ា (Camera) → Allow', 'Allow camera']].map(([i, km, en]) => `<div class="card" style="display:flex;align-items:center;gap:22px;padding:18px 26px"><div style="font-size:46px">${i}</div><div style="text-align:left"><div class="km" style="font-size:32px;font-weight:700;line-height:1.5">${km}</div><div style="font-size:24px;color:#475569">${en} · ${'only the first time'}</div></div></div>`).join('')}
+    </div>
+  </div>`));
+}
+
+// Custom slides carry their own text; screen scenes get the caption layer.
+window.__ready = fetch(V.shots + 'boxes.json').then((r) => r.json()).then((b) => {
+  window.BOXES = b;
+  if (!S.kind) screenScene();
+  else ({ title: titleScene, end: endScene, need: needScene, install: installScene, scan: scanScene })[S.kind]();
+  return Promise.all([...document.images].map((i) => i.complete ? 1 : new Promise((r) => { i.onload = i.onerror = r; })));
+}).then(() => document.fonts.ready);
+</script>
+</body>
+</html>

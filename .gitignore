@@ -1,0 +1,11 @@
+node_modules/
+apps/*/dist/
+data/
+demo-data/
+.env
+*.log
+coverage/
+qr-attendance-deploy.zip
+backups/
+*.tsbuildinfo
+marketing/videos/*.mp4
